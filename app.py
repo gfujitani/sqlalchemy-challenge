@@ -62,27 +62,18 @@ def stations():
 @app.route("/api/v1.0/tobs")
 def tobs():
     session=Session(engine)
-    lastest_date=session.query(measurement.date).order_by(measurement.date.desc()).first()
-    lastest_date=dt.datetime.strptime(lastest_date, '%Y-%m-%d')
-    one_year_earlier=dt.date(lastest_date.year-1,lastest_date.month,lastest_date.day)
-    results=session.query(measurement.date, measurement.tob).filter(measurement.date>=one_year_earlier).all()
+    latest_date=session.query(measurement.date).order_by(measurement.date.desc()).first()
+    one_year_earlier=dt.date(2017,8,23) - dt.timedelta(days=365)
+    results=session.query(*[measurement.date, measurement.tobs]).filter(measurement.date>=one_year_earlier).all()
     session.close()
-
-    tobs=[]
-
-    for date, tobs in results:
-        tobs_df={}
-        tobs_df['date']=date
-        tobs_df['tobs']=tobs
-        tobs.append(tobs_df)
-    
+    tobs=list(np.ravel(results))
     return jsonify(tobs)
+
 @app.route("/api/v1.0/<start>")
 def start_date(start):
     session=Session(engine)
-    result=session.query(func.min(measurement.tobs), func.max(measurement.tobs), func.avg(measurement.tobs)).filter(measurement.date>=start).all()
+    result=session.query(func.min(measurement.tobs), func.max(measurement.tobs), func.avg(measurement.tobs)).filter(measurement.date>start).all()
     session.close()
-
     tob_start=[]
     for min,max,avg in result:
         tob_start_df={}
